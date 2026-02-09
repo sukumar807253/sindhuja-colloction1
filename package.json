@@ -1,34 +1,23 @@
 {
-  "name": "sindhuja-client",
+  "name": "server",
   "version": "1.0.0",
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "eslint.config.js",
- "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
-}
-,
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sukumar807253/sindhuja-colloction.git"
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/sukumar807253/sindhuja-colloction/issues"
-  },
-  "homepage": "https://github.com/sukumar807253/sindhuja-colloction#readme",
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
-    "@vitejs/plugin-react": "^5.1.3",
-    "axios": "^1.13.5",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-router-dom": "^6.30.3",
-    "tailwindcss": "^4.1.18",
-    "vite": "^7.3.1"
+    "@supabase/supabase-js": "^2.95.3",
+    "axios": "^1.13.4",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.11"
   }
 }
