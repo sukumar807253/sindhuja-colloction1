@@ -33,7 +33,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const allowedOrigins = [
   "http://localhost:5173", // Local dev
   FRONTEND_URL,            // Production main frontend
-  "https://sindhuja-frontend-fa9y45jf0-sugumars-projects-4df23453.vercel.app" // Current Vercel deploy
+  "https://sindhuja-frontend.vercel.app" // Current Vercel deploy
 ];
 
 app.use(cors({
