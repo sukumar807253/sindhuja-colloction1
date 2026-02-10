@@ -4,32 +4,40 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const { supabase } = require("./supabaseClient");
+
 const collectionRoutes = require("./routes/collectionRoutes");
 const centerRoutes = require("./routes/centerRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 
-
 const app = express();
 
-/* ================= MIDDLEWARE ================= */
-app.use(
-  cors({
-    origin: [
-      "https://sindhuja-frontend.vercel.app",
-      "http://localhost:5173"
-    ],
-    credentials: true
-  })
-);
+/* ==================== ENV ==================== */
+const {
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_BUCKET,
+  FRONTEND_URL
+} = process.env;
 
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_BUCKET) {
+  console.error("❌ Missing environment variables");
+  process.exit(1);
+}
+
+/* ==================== MIDDLEWARE ==================== */
+app.use(cors({
+  origin: FRONTEND_URL, // https://sindhuja-frontend.vercel.app
+  credentials: true
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-/* ================= HEALTH ================= */
+/* ==================== HEALTH ==================== */
 app.get("/", (req, res) => {
   res.json({ status: "API running ✅" });
 });
 
-/* ================= LOGIN ================= */
+/* ==================== LOGIN ==================== */
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -63,7 +71,6 @@ app.post("/api/login", async (req, res) => {
     res.status(500).json({ message: "Login failed" });
   }
 });
-
 
 /* ================= MEMBERS ================= */
 app.get("/api/members/:centerId", async (req, res) => {
@@ -99,6 +106,7 @@ app.get("/api/members/:centerId", async (req, res) => {
   }
 });
 
+/* ================= CENTERS ================= */
 app.put("/api/centers/:id/activate", async (req, res) => {
   const { id } = req.params;
 
@@ -107,23 +115,19 @@ app.put("/api/centers/:id/activate", async (req, res) => {
     .update({ is_active: true })
     .eq("id", id);
 
-  if (error) return res.status(500).json({ message: "Failed to activate center" });
+  if (error)
+    return res.status(500).json({ message: "Failed to activate center" });
 
   res.json({ success: true, data });
-});
-
-
-/* ================= HEALTH ================= */
-app.get("/", (req, res) => {
-  res.json({ status: "API running ✅" });
 });
 
 /* ================= ROUTES ================= */
 app.use("/api/centers", centerRoutes);
 app.use("/api/collections", collectionRoutes);
 app.use("/api/schedule", scheduleRoutes);
+
 /* ================= START ================= */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on port ${PORT}`)
-)
+);
