@@ -3,36 +3,23 @@ const router = express.Router();
 const { supabase } = require("../supabaseClient");
 
 /* ================= GET ALL CENTERS (ADMIN) ================= */
-// router.get("/", async (req, res) => {
-//   try {
-//     const { data, error } = await supabase
-//       .from("centers")          // ✅ missing line fixed
-//       .select("*")
-//       .order("id", { ascending: true });
-
-//     if (error) throw error;
-
-//     res.json(data); // 👈 ALL centers (active + inactive)
-//   } catch (err) {
-//     console.error("FETCH CENTERS ERROR 👉", err);
-//     res.status(500).json({ message: "Failed to fetch centers" });
-//   }
-// });
-
-router.post("/", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const { name } = req.body;
     const { data, error } = await supabase
-      .from("centers")
-      .insert([{ name }]);
+      .from("centers")          // ✅ missing line fixed
+      .select("*")
+      .order("id", { ascending: true });
 
     if (error) throw error;
-    res.status(201).json(data);
+
+    res.json(data); // 👈 ALL centers (active + inactive)
   } catch (err) {
-    console.error("CREATE CENTER ERROR 👉", err);
-    res.status(400).json({ message: "Failed to create center" });
+    console.error("FETCH CENTERS ERROR 👉", err);
+    res.status(500).json({ message: "Failed to fetch centers" });
   }
 });
+
+
 /* ================= OPEN CENTER (DAY OPEN) ================= */
 router.put("/:id/open", async (req, res) => {
   try {
