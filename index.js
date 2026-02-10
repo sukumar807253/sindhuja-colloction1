@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
-const { supabase } = require("./supabaseClient");
+const { createClient } = require("@supabase/supabase-js"); // make sure to import createClient
 
 const collectionRoutes = require("./routes/collectionRoutes");
 const centerRoutes = require("./routes/centerRoutes");
@@ -19,16 +19,33 @@ const {
   FRONTEND_URL
 } = process.env;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_BUCKET) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_BUCKET || !FRONTEND_URL) {
   console.error("❌ Missing environment variables");
   process.exit(1);
 }
 
+/* ==================== SUPABASE ==================== */
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false }
+});
+
 /* ==================== MIDDLEWARE ==================== */
+const allowedOrigins = [
+  FRONTEND_URL,           // Production frontend
+  "http://localhost:5173" // Local dev frontend
+];
+
 app.use(cors({
-  origin: FRONTEND_URL, // https://sindhuja-frontend.vercel.app
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman, curl
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error("CORS policy does not allow this origin."), false);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -41,7 +58,6 @@ app.get("/", (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password)
       return res.status(400).json({ message: "Missing email or password" });
 
@@ -49,41 +65,28 @@ app.post("/api/login", async (req, res) => {
       .from("users")
       .select("id, name, password, isAdmin, blocked")
       .eq("email", email.toLowerCase())
-      .single();
+      .maybeSingle(); // safer than .single()
 
-    if (error || !user)
-      return res.status(401).json({ message: "Invalid credentials" });
-
-    if (user.blocked)
-      return res.status(403).json({ message: "Account blocked" });
+    if (error || !user) return res.status(401).json({ message: "Invalid credentials" });
+    if (user.blocked) return res.status(403).json({ message: "Account blocked" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(401).json({ message: "Wrong password" });
+    if (!match) return res.status(401).json({ message: "Wrong password" });
 
-    res.json({
-      id: user.id,
-      name: user.name,
-      isAdmin: user.isAdmin
-    });
+    res.json({ id: user.id, name: user.name, isAdmin: user.isAdmin });
   } catch (err) {
     console.error("LOGIN ERROR 👉", err);
     res.status(500).json({ message: "Login failed" });
   }
 });
 
-/* ================= MEMBERS ================= */
+/* ==================== MEMBERS ==================== */
 app.get("/api/members/:centerId", async (req, res) => {
   try {
     const { centerId } = req.params;
-
     const { data, error } = await supabase
       .from("members")
-      .select(`
-        id,
-        name,
-        loans ( id, status )
-      `)
+      .select(`id, name, loans(id, status)`)
       .eq("center_id", centerId);
 
     if (error) throw error;
@@ -106,28 +109,23 @@ app.get("/api/members/:centerId", async (req, res) => {
   }
 });
 
-/* ================= CENTERS ================= */
+/* ==================== CENTERS ==================== */
 app.put("/api/centers/:id/activate", async (req, res) => {
   const { id } = req.params;
-
   const { data, error } = await supabase
     .from("centers")
     .update({ is_active: true })
     .eq("id", id);
 
-  if (error)
-    return res.status(500).json({ message: "Failed to activate center" });
-
+  if (error) return res.status(500).json({ message: "Failed to activate center" });
   res.json({ success: true, data });
 });
 
-/* ================= ROUTES ================= */
+/* ==================== ROUTES ==================== */
 app.use("/api/centers", centerRoutes);
 app.use("/api/collections", collectionRoutes);
 app.use("/api/schedule", scheduleRoutes);
 
-/* ================= START ================= */
+/* ==================== START SERVER ==================== */
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
