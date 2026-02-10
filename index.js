@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
-const { createClient } = require("@supabase/supabase-js"); // make sure to import createClient
+const { createClient } = require("@supabase/supabase-js");
 
 const collectionRoutes = require("./routes/collectionRoutes");
 const centerRoutes = require("./routes/centerRoutes");
@@ -29,16 +29,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false }
 });
 
-/* ==================== MIDDLEWARE ==================== */
+/* ==================== CORS ==================== */
 const allowedOrigins = [
-  FRONTEND_URL,           // Production frontend
-  "http://localhost:5173" // Local dev frontend
+  "http://localhost:5173", // Local dev
+  FRONTEND_URL,            // Production main frontend
+  "https://sindhuja-frontend-fa9y45jf0-sugumars-projects-4df23453.vercel.app" // Current Vercel deploy
 ];
 
 app.use(cors({
   origin: function(origin, callback) {
     if (!origin) return callback(null, true); // allow Postman, curl
-    if (allowedOrigins.indexOf(origin) === -1) {
+    if (!allowedOrigins.includes(origin)) {
       return callback(new Error("CORS policy does not allow this origin."), false);
     }
     return callback(null, true);
@@ -46,6 +47,7 @@ app.use(cors({
   credentials: true
 }));
 
+/* ==================== MIDDLEWARE ==================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -58,14 +60,14 @@ app.get("/", (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password)
+    if (!email || !password) 
       return res.status(400).json({ message: "Missing email or password" });
 
     const { data: user, error } = await supabase
       .from("users")
       .select("id, name, password, isAdmin, blocked")
       .eq("email", email.toLowerCase())
-      .maybeSingle(); // safer than .single()
+      .maybeSingle();
 
     if (error || !user) return res.status(401).json({ message: "Invalid credentials" });
     if (user.blocked) return res.status(403).json({ message: "Account blocked" });
@@ -86,7 +88,7 @@ app.get("/api/members/:centerId", async (req, res) => {
     const { centerId } = req.params;
     const { data, error } = await supabase
       .from("members")
-      .select(`id, name, loans(id, status)`)
+      .select("id, name, loans(id, status)")
       .eq("center_id", centerId);
 
     if (error) throw error;
@@ -95,12 +97,7 @@ app.get("/api/members/:centerId", async (req, res) => {
       .filter(m => m.loans?.some(l => l.status === "CREDITED"))
       .map(m => {
         const loan = m.loans.find(l => l.status === "CREDITED");
-        return {
-          member_id: m.id,
-          name: m.name,
-          loan_id: loan.id,
-          status: loan.status
-        };
+        return { member_id: m.id, name: m.name, loan_id: loan.id, status: loan.status };
       });
 
     res.json(result);
