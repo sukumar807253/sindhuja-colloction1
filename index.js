@@ -15,7 +15,7 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "https://sindhuja-colloction.vercel.app",
+      "https://sindhuja-frontend.vercel.app",
       "http://localhost:5173"
     ],
     credentials: true
